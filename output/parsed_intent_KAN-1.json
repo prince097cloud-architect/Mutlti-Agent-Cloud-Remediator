@@ -1,0 +1,43 @@
+{
+  "Violation/Issue description": "Violation Detected: Several S3 buckets in the AWS account do not comply with security baseline requirements.",
+  "AWS Account": "580069881439",
+  "Region": "ap-south-1",
+  "Environment": "<ENV>",
+  "Version information": {
+    "CURRENT VERSION": "1.0.0",
+    "TARGET VERSION": "1.0.1"
+  },
+  "Terraform workspace": "https://app.terraform.io/app/TFE-PROD-GRADE-INFRA/workspaces/agentic-remediation-test-infra",
+  "repo": "prince097cloud-architect/Test-Multigent-infra",
+  "Affected resources": {
+    "Buckets": [
+      "aurora-data-vault-logs",
+      "cloudforge-artifacts-dev",
+      "nimbus-secure-backups-01",
+      "atlas-terraform-state-store",
+      "sentinel-audit-trail-bucket"
+    ]
+  },
+  "Issues identified": [
+    "Server-side encryption is disabled or misconfigured.",
+    "Public access is not fully blocked.",
+    "Versioning is not enabled on S3 buckets."
+  ],
+  "Compliance references": [
+    "S3 Encryption Policy (Confluence Link) - https://prince2015akash.atlassian.net/wiki/spaces/~5fc7904f7cc1030069b975e6/pages/688129/S3+Bucket+Compliance+Policy+Version+1.0",
+    "S3 Public Access Restriction Policy (Confluence Link)"
+  ],
+  "Required actions": [
+    "Enable AES256 or KMS encryption on all listed buckets.",
+    "Block all forms of public access at the bucket level.",
+    "Enable Versioning on the impacted buckets.",
+    "If Terraform exists for the buckets, generate a remediation patch adjusting module variables or resources accordingly."
+  ],
+  "Automation requirements": [
+    "Identify whether bucket is managed via Terraform.",
+    "If yes: Generate PR with module updates.",
+    "If no: Provide instructions for manual remediation."
+  ],
+  "Approval requirements": "Yes \u2014 Create Pull Request for review.",
+  "branch": "remediate-kan-1"
+}

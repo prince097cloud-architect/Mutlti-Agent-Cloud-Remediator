@@ -1,0 +1,280 @@
+# Multi-Agent Cloud Remediation System
+
+An intent-driven autonomous system that transforms Jira compliance tickets into automated Terraform pull requests using specialized AI agents.
+
+## 🏗️ Architecture Overview
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   START     │───▶│   JIRA      │───▶│   GITHUB    │
+│             │    │   NODE      │    │   NODE      │
+└─────────────┘    └─────────────┘    └─────────────┘
+                          │                   │
+                          ▼                   ▼
+                   ┌─────────────┐    ┌─────────────┐
+                   │ Jira Parser │    │ GitHub PR   │
+                   │   Agent     │    │   Agent     │
+                   └─────────────┘    └─────────────┘
+                                            │
+                                            ▼
+                                    ┌─────────────┐
+                                    │ Classifier  │
+                                    │   Agent     │
+                                    └─────────────┘
+```
+
+## 📁 Project Structure
+
+```
+multi-agent-system/
+├── app/
+│   ├── main.py                 # FastAPI application entry point
+│   ├── graph.py                # LangGraph orchestration logic
+│   ├── agents/
+│   │   ├── jira_parser.py      # Jira ticket parsing agent
+│   │   ├── github_pr.py        # GitHub PR creation agent
+│   │   └── classifier.py       # Resource type classification agent
+│   ├── mcp/
+│   │   ├── jira_server.py      # MCP server for Jira operations
+│   │   └── github_server.py    # MCP server for GitHub operations
+│   ├── config/
+│   │   └── prompt_templates.py  # Resource-specific prompt templates
+│   └── utils/
+│       ├── logger.py           # Logging utilities
+│       ├── config.py           # Configuration management
+│       └── coordination_logger.py # Agent coordination tracking
+├── logs/                       # Log files directory
+├── output/                     # Parsed intent outputs
+├── .env.example               # Environment variables template
+├── requirements.txt           # Python dependencies
+├── cleanup_prs.py            # Utility to clean up test PRs
+└── TROUBLESHOOTING_SUMMARY.md # Detailed troubleshooting guide
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.13+
+- GitHub Personal Access Token
+- Jira API Token
+- OpenAI API Key (for LLM operations)
+
+### 1. Clone and Setup
+
+```bash
+git clone <repository-url>
+cd multi-agent-system
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 2. Environment Configuration
+
+Create a `.env` file from the template:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your credentials:
+
+```env
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+
+# GitHub Configuration  
+GITHUB_TOKEN=your_github_personal_access_token_here
+
+# Jira Configuration
+JIRA_URL=https://your-domain.atlassian.net
+JIRA_USERNAME=your_jira_email@example.com
+JIRA_API_TOKEN=your_jira_api_token_here
+
+# LLM Configuration
+OPENAI_MODEL_REMEDIATION=gpt-4o
+OPENAI_MODEL_CLASSIFICATION=gpt-4o-mini
+```
+
+### 3. Required API Tokens
+
+#### GitHub Personal Access Token
+1. Go to GitHub Settings → Developer settings → Personal access tokens
+2. Generate new token with these permissions:
+   - `repo` (Full control of private repositories)
+   - `workflow` (Update GitHub Action workflows)
+
+#### Jira API Token
+1. Log in to your Jira instance
+2. Go to Account settings → Security → API tokens
+3. Create new token with:
+   - Browse projects
+   - Read issues
+   - Add comments
+
+#### OpenAI API Key
+1. Go to platform.openai.com
+2. Create API key with access to:
+   - GPT-4o (for remediation tasks)
+   - GPT-4o-mini (for classification tasks)
+
+### 4. Start the Application
+
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+The API will be available at `http://localhost:8000`
+
+## 📖 Usage
+
+### Trigger Remediation Workflow
+
+```bash
+curl -X POST http://localhost:8000/run/KAN-1
+```
+
+Replace `KAN-1` with your actual Jira ticket ID.
+
+### API Endpoints
+
+- `GET /health` - Health check
+- `GET /` - Service information
+- `POST /run/{jira_id}` - Trigger remediation workflow
+
+### Monitor Progress
+
+View real-time logs:
+
+```bash
+# Main API logs
+tail -f logs/api.log
+
+# Agent coordination logs (NEW!)
+tail -f logs/agent_coordination.log
+
+# Individual agent logs
+tail -f logs/jira_parser_agent.log
+tail -f logs/github_agent.log
+tail -f logs/classifier.log
+tail -f logs/langgraph.log
+```
+
+### Check Results
+
+```bash
+# View parsed intent
+cat output/parsed_intent_KAN-1.json
+
+# Check generated PR URL in logs
+grep "PR Created:" logs/agent_coordination.log
+```
+
+## 🔧 Configuration
+
+### Supported Resource Types
+
+Currently supports:
+- **S3** - Bucket encryption, versioning, and public access controls
+
+### Adding New Resource Types
+
+1. Add prompt template in `app/config/prompt_templates.py`
+2. Update classifier to recognize new resource type
+3. Test with sample Jira tickets
+
+### Customizing Prompts
+
+Edit `app/config/prompt_templates.py` to modify:
+- Resource-specific logic
+- Compliance requirements
+- Output formats
+
+## 🧪 Testing
+
+### Clean Up Test PRs
+
+```bash
+python cleanup_prs.py
+```
+
+This script closes all open PRs and deletes their branches in the test repository.
+
+### Test with Different Jira Tickets
+
+```bash
+# Test S3 remediation
+curl -X POST http://localhost:8000/run/KAN-1
+
+# Test with different ticket
+curl -X POST http://localhost:8000/run/PROJ-123
+```
+
+## 📊 Monitoring and Observability
+
+### Agent Coordination Tracking
+
+The system includes comprehensive coordination logging that shows:
+
+- Workflow timing and performance
+- Agent decision-making process
+- State transitions between agents
+- Error tracking and resolution
+
+View in `logs/agent_coordination.log`:
+
+```
+WORKFLOW STARTED - Session: 20260101_235454
+LANGGRAPH NODE START: JIRA
+🤖 AGENT CALL: Jira Parser Agent
+🎯 CLASSIFIER AGENT DECISION: s3
+📋 PROMPT TEMPLATE SELECTION: s3
+WORKFLOW COMPLETED - Total Duration: 19.42s
+```
+
+### Performance Metrics
+
+- **Jira Parsing**: ~6 seconds
+- **Classification**: ~1 second  
+- **GitHub PR Creation**: ~12 seconds
+- **Total Workflow**: ~20 seconds
+
+## 🚨 Troubleshooting
+
+Common issues and solutions are documented in `TROUBLESHOOTING_SUMMARY.md`.
+
+Key troubleshooting steps:
+
+1. **Check environment variables**: Ensure all tokens are correctly set
+2. **Verify API permissions**: Make sure tokens have required scopes
+3. **Check logs**: Review `logs/agent_coordination.log` for detailed flow
+4. **Test individual components**: Use health endpoints to verify connectivity
+
+## 🔒 Security Considerations
+
+- Never commit `.env` file to version control
+- Use GitHub Secrets for production deployments
+- Rotate API tokens regularly
+- Monitor API usage and access patterns
+- Review all generated PRs before merging
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch
+3. Add tests for new functionality
+4. Update documentation
+5. Submit pull request
+
+## 📄 License
+
+[Add your license information here]
+
+## 🆘 Support
+
+For issues and questions:
+1. Check `TROUBLESHOOTING_SUMMARY.md`
+2. Review agent coordination logs
+3. Create GitHub issue with detailed logs
+4. Include Jira ticket ID (sanitized) and error messages

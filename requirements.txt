@@ -1,0 +1,16 @@
+langgraph
+langchain-openai
+langchain-mcp-adapters
+mcp
+langchain-community
+fastapi
+langchain-core
+uvicorn
+pydantic-settings
+httpx
+python-dotenv
+boto3
+langchain-classic
+requests
+fastapi-mcp
+Pygithub
